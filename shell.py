@@ -1,4 +1,5 @@
-
+import lang
 while (True):
     text = input('Meow > ')
-    print(text)
+    com=lang.Command(text)
+    print(com.ToToken())
