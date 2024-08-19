@@ -21,12 +21,13 @@ T_RPAREN='RPAREN'
 
 
 class Position:
-    def __init__(self, idx, ln, col, fn, ftxt):
+    def __init__(self, idx, ln, col,fn,ftxt):
         self.idx = idx
         self.ln = ln
         self.col = col
-        self.fn = fn
-        self.ftxt = ftxt
+        self.fn=fn
+        self.ftxt=ftxt
+       
 
     def advance(self, current_char):
         self.idx += 1
@@ -39,7 +40,7 @@ class Position:
         return self
 
     def copy(self):
-        return Position(self.idx, self.ln, self.col, self.fn, self.ftxt)
+        return Position(self.idx, self.ln, self.col,self.fn,self.ftxt)
 
 
 class Token:
@@ -52,14 +53,15 @@ class Token:
         else: return f'{self.type}'
 
 class Lexer:
-    def __init__(self,text):
+    def __init__(self,fn,text):
+        self.fn=fn
         self.text=text
-        self.pos=-1
+        self.pos=Position(-1,0,-1,fn,text)
         self.current=None
 
     def advance(self):
-        self.pos+=1
-        if self.pos<len(self.text): self.current=self.text[self.pos]
+        self.pos.advance(self.current)
+        if self.pos.idx<len(self.text): self.current=self.text[self.pos.idx]
         else: self.current=None
     def make_num(self):
         str=''
@@ -72,7 +74,7 @@ class Lexer:
         tokens=[]
         self.advance()
         while self.current!=None:
-           
+            
             if self.current == '\n' or self.current=='\t' or self.current==' ': 
                 self.advance()
                 continue
@@ -81,15 +83,18 @@ class Lexer:
             elif self.current=='-': tokens.append(Token(T_MINUS)); self.advance()
             elif self.current=='(': tokens.append(Token(T_LPAREN)); self.advance()
             elif self.current==')': tokens.append(Token(T_RPAREN)); self.advance()
-            else: return [],Error.IllegalChracterError(f'Token Unknown {self.current}')
-        print('neiw')
+            else: 
+                char=self.current
+                pos_start=self.pos.copy()
+                self.advance()
+                return [],Error.IllegalChracterError(pos_start,self.pos,f'Token Unknown \'{char}\'')
         return tokens,None
 
 
         
 
 def run(text,fn=None):
-    lex=Lexer(text)
+    lex=Lexer(fn,text)
     tokens,error=lex.make_tokens()
 
     return tokens,error
