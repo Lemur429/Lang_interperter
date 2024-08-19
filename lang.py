@@ -1,4 +1,6 @@
 import Error
+T_CLOSE = 'CLOSE'
+
 DIGITS='0123456789'
 T_INTEGER='INT'
 T_BOOLEAN='BOOL'
@@ -13,6 +15,33 @@ T_AND='AND'
 T_OR='OR'
 T_NOT='NOT'
 
+T_LPAREN='LPAREN'
+T_RPAREN='RPAREN'
+
+
+
+class Position:
+    def __init__(self, idx, ln, col, fn, ftxt):
+        self.idx = idx
+        self.ln = ln
+        self.col = col
+        self.fn = fn
+        self.ftxt = ftxt
+
+    def advance(self, current_char):
+        self.idx += 1
+        self.col += 1
+
+        if current_char == '\n':
+            self.ln += 1
+            self.col = 0
+
+        return self
+
+    def copy(self):
+        return Position(self.idx, self.ln, self.col, self.fn, self.ftxt)
+
+
 class Token:
     def __init__(self,typ, value=None):
         self.type=typ
@@ -22,7 +51,7 @@ class Token:
         if self.value: return f'{self.type}:{self.value}'
         else: return f'{self.type}'
 
-class Command:
+class Lexer:
     def __init__(self,text):
         self.text=text
         self.pos=-1
@@ -32,29 +61,35 @@ class Command:
         self.pos+=1
         if self.pos<len(self.text): self.current=self.text[self.pos]
         else: self.current=None
-    def makeNumber(self):
+    def make_num(self):
         str=''
-        while(self.current!=None and self.current in DIGITS):
+        while self.current!=None and self.current in DIGITS :
             str+=self.current
             self.advance()
         return Token(T_INTEGER,int(str))
         
-    def ToToken(self):
+    def make_tokens(self):
         tokens=[]
         self.advance()
         while self.current!=None:
            
-            if(self.current == '\n' or self.current=='\t' or self.current==' '): 
+            if self.current == '\n' or self.current=='\t' or self.current==' ': 
                 self.advance()
                 continue
-            elif(self.current in DIGITS): tokens.append(self.makeNumber())
-            elif(self.current=='+'): tokens.append(Token(T_PLUS)); self.advance()
-            elif(self.current=='-'): tokens.append(Token(T_MINUS)); self.advance()
-            else: print(str(Error.IllegalChracterError(f'Token Unknown {self.current}'))); return []
+            elif self.current in DIGITS: tokens.append(self.make_num())
+            elif self.current=='+': tokens.append(Token(T_PLUS)); self.advance()
+            elif self.current=='-': tokens.append(Token(T_MINUS)); self.advance()
+            elif self.current=='(': tokens.append(Token(T_LPAREN)); self.advance()
+            elif self.current==')': tokens.append(Token(T_RPAREN)); self.advance()
+            else: return [],Error.IllegalChracterError(f'Token Unknown {self.current}')
         print('neiw')
-        return tokens
+        return tokens,None
 
 
         
 
-        
+def run(text,fn=None):
+    lex=Lexer(text)
+    tokens,error=lex.make_tokens()
+
+    return tokens,error
