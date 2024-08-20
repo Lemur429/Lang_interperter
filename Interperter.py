@@ -6,24 +6,20 @@ class Number:
     def __init__(self, value):
         self.value = value
         self.set_pos()
-        self.set_context()
         
     def set_pos(self, pos_start=None, pos_end=None):
         self.pos_start = pos_start
         self.pos_end = pos_end
         return self
-    def set_context(self, context=None):
-        self.context = context
-        return self
     def added_to(self, other):
         if isinstance(other, Number):
-             return Number(self.value + other.value).set_context(self.context), None
+             return Number(self.value + other.value), None
     def subbed_by(self, other):
         if isinstance(other, Number):
-             return Number(self.value - other.value).set_context(self.context), None
+             return Number(self.value - other.value), None
     def multed_by(self, other):
         if isinstance(other, Number):
-             return Number(self.value * other.value).set_context(self.context), None
+             return Number(self.value * other.value), None
     def dived_by(self, other):
         if isinstance(other, Number):
             if other.value == 0:
@@ -32,7 +28,7 @@ class Number:
                     'Division by zero',
                     self.context
                 )
-            return Number(self.value / other.value).set_context(self.context), None
+            return Number(int(self.value / other.value)), None
     def modul_by(self, other):
         if isinstance(other, Number):
             if other.value == 0:
@@ -41,31 +37,39 @@ class Number:
                     'Division by zero',
                     self.context
                 )
-            return Number(self.value % other.value).set_context(self.context), None
+            return Number(int(self.value % other.value)), None
     def get_comparison_eq(self, other):
         if isinstance(other, Number):
-            return Number(int(self.value == other.value)).set_context(self.context), None
+            return Number(int(self.value == other.value)), None
 
     def get_comparison_ne(self, other):
         if isinstance(other, Number):
-            return Number(int(self.value != other.value)).set_context(self.context), None
+            return Number(int(self.value != other.value)), None
 
     def get_comparison_l(self, other):
         if isinstance(other, Number):
-            return Number(int(self.value < other.value)).set_context(self.context), None
+            return Number(int(self.value < other.value)), None
 
     def get_comparison_g(self, other):
         if isinstance(other, Number):
-            return Number(int(self.value > other.value)).set_context(self.context), None
+            return Number(int(self.value > other.value)), None
 
     def get_comparison_le(self, other):
         if isinstance(other, Number):
-            return Number(int(self.value <= other.value)).set_context(self.context), None
+            return Number(int(self.value <= other.value)), None
 
     def get_comparison_ge(self, other):
         if isinstance(other, Number):
-            return Number(int(self.value >= other.value)).set_context(self.context), None
+            return Number(int(self.value >= other.value)), None
+    def notted(self):
+        return Number(1 if self.value == 0 else 0), None
+    def anded_by(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value and other.value)), None
 
+    def ored_by(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value or other.value)), None
     def __repr__(self):
         return str(self.value)
 
@@ -89,7 +93,6 @@ class RTResult:
 class Interpreter:
     def visit(self, node):
         method_name = f'visit_{type(node).__name__}'
-        print(method_name)
         method = getattr(self, method_name, self.no_visit_method)
         return method(node)
 
@@ -107,7 +110,6 @@ class Interpreter:
         if res.error: return res
         right = res.register(self.visit(node.right_node))
         if res.error: return res
-
         if node.token.type == T_PLUS:
             result, error = left.added_to(right)
         elif node.token.type == T_MINUS:
@@ -130,6 +132,11 @@ class Interpreter:
             result,error=left.get_comparison_le(right)
         elif node.token.type == T_NE:
             result,error=left.get_comparison_ne(right)
+        elif node.token.type ==T_AND:
+            result,error=left.anded_by(right)
+        elif node.token.type == T_OR:
+            result,error=left.ored_by(right)
+
         if error:
             return res.failure(error)
         else:
@@ -144,7 +151,8 @@ class Interpreter:
 
         if node.operation.type == T_MINUS:
             number, error = number.multed_by(Number(-1))
-
+        if node.operation.type ==T_NOT:
+            number,error = number.notted()
         if error:
             return res.failure(error)
         else:

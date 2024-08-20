@@ -106,7 +106,7 @@ class Parser:
             operation=self.current
             res.register_advancement()
             self.advance()
-            node = res.register(self.comp_expr)
+            node = res.register(self.comp_expr())
             if res.error: return res
             return res.success(UnaryOpNode(operation,node))
         node = res.register(self.bin_op(self.arith_expr, (T_EE, T_NE, T_L, T_G, T_LE, T_GE)))

@@ -1,7 +1,8 @@
+import string
 T_EOF= 'EOF'
 DIGITS='0123456789'
+ALPHABET=string.ascii_letters
 T_INTEGER='INT'
-T_BOOLEAN='BOOL'
 
 T_PLUS='PLUS'
 T_MINUS='MINUS'
@@ -22,8 +23,8 @@ T_NOT='NOT'
 
 T_LPAREN='LPAREN'
 T_RPAREN='RPAREN'
-
-KEYWORDS=['FALSE','TRUE']
+T_KEYWORD='KEYWORD'
+BOOLEANS=['FALSE','TRUE']
 
 class Position:
     def __init__(self, idx, ln, col,fn,ftxt):

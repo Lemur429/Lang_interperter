@@ -47,7 +47,20 @@ class Lexer:
         else:
             token=Token(T_NOT,pos_start=pos_start)
         return token
- 
+    def make_keyword(self):
+        pos_start=self.pos.copy()
+        str=self.current
+        self.advance()
+        while self.current!=None and self.current in ALPHABET:
+            str+=self.current
+            self.advance()
+        if str in BOOLEANS:
+            return Token(T_INTEGER,str==BOOLEANS[1],pos_start=pos_start,pos_end=self.pos),None
+        else:
+            return None,Error.IllegalChracterError(pos_start,self.pos,f'Unknown Keyword \'{str}\'')
+            
+
+
     def make_char_error(self,token_type,char):
         pos_start=self.pos.copy()
         self.advance()
@@ -66,6 +79,10 @@ class Lexer:
                 self.advance()
                 continue
             elif self.current in DIGITS: tokens.append(self.make_num())
+            elif self.current in ALPHABET: 
+                token,error= self.make_keyword()
+                if error: return [],error
+                tokens.append(token)
             elif self.current=='+': tokens.append(Token(T_PLUS, pos_start=self.pos)); self.advance()
             elif self.current=='-': tokens.append(Token(T_MINUS, pos_start=self.pos)); self.advance()
             elif self.current=='*': tokens.append(Token(T_MULTIPLY, pos_start=self.pos));self.advance()
@@ -79,6 +96,10 @@ class Lexer:
                 else: tokens.append(token)
             elif self.current=='&': 
                 token,error=self.make_char_error(T_AND,'&')
+                if error: return [],error 
+                else: tokens.append(token)
+            elif self.current=='|': 
+                token,error=self.make_char_error(T_OR,'|')
                 if error: return [],error 
                 else: tokens.append(token)
             elif self.current== '>':tokens.append(self.make_greater())
