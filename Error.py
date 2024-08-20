@@ -18,6 +18,9 @@ class IllegalChracterError(Error):
 class InvalidSyntax(Error):
     def __init__(self,pos_start,pos_end,detail):
         super().__init__(pos_start,pos_end,'Syntax Error',detail)
+class ExpectedChar(Error):
+      def __init__(self,pos_start,pos_end,detail):
+        super().__init__(pos_start,pos_end,'Expected Character',detail)
 class RTError(Error):
 	def __init__(self, pos_start, pos_end, details, context):
 		super().__init__(pos_start, pos_end, 'Runtime Error', details)

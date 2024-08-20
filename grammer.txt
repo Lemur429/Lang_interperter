@@ -1,6 +1,17 @@
 
-expr: term ({PLUS/MINUS} term)* 
+expr::= term ({PLUS/MINUS} term)* | 
+
 term: factor ({MUL/Div} factor)* 
 factor: INT  #NO floats
       : (PLUS |MINUS ) factor
+      : (LPAREN) factor (RPAREN)
+
+<expr> ::= <binary_expr> | <bool_expr>
+<bool_expr> ::=  <binary_expr> <comparison> <binary_expr> | <bool_expr> (&& | ||) <bool_expr> | !<bool_expr>
+<comparison> ::= == | != | >= | > | < | <= 
+
+<binary_expr>: <term> | <binary_expr> (PLUS/MINUS) <term>
+<term>: <factor> | <term> (MUL/DIV) <factor> 
+<factor>: <INT> 
+      : (PLUS|MINUS) factor
       : (LPAREN) factor (RPAREN)
