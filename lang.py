@@ -1,6 +1,5 @@
-import Error
-T_CLOSE = 'CLOSE'
-
+from Error import *
+T_EOF= 'EOF'
 DIGITS='0123456789'
 T_INTEGER='INT'
 T_BOOLEAN='BOOL'
@@ -29,7 +28,7 @@ class Position:
         self.ftxt=ftxt
        
 
-    def advance(self, current_char):
+    def advance(self, current_char=None):
         self.idx += 1
         self.col += 1
 
@@ -44,10 +43,14 @@ class Position:
 
 
 class Token:
-    def __init__(self,typ, value=None):
+    def __init__(self,typ, value=None,pos_start=None,pos_end=None):
         self.type=typ
         self.value=value
-
+        if pos_start: 
+            self.pos_start=pos_start
+            self.pos_end=pos_start.copy()
+            self.pos_end.advance()
+        if pos_end: self.pos_end=pos_end
     def __repr__(self) -> str:
         if self.value: return f'{self.type}:{self.value}'
         else: return f'{self.type}'
@@ -65,10 +68,12 @@ class Lexer:
         else: self.current=None
     def make_num(self):
         str=''
+        pos_start=self.pos.copy()
+
         while self.current!=None and self.current in DIGITS :
             str+=self.current
             self.advance()
-        return Token(T_INTEGER,int(str))
+        return Token(T_INTEGER,int(str),pos_start,self.pos)
         
     def make_tokens(self):
         tokens=[]
@@ -79,22 +84,122 @@ class Lexer:
                 self.advance()
                 continue
             elif self.current in DIGITS: tokens.append(self.make_num())
-            elif self.current=='+': tokens.append(Token(T_PLUS)); self.advance()
-            elif self.current=='-': tokens.append(Token(T_MINUS)); self.advance()
-            elif self.current=='(': tokens.append(Token(T_LPAREN)); self.advance()
-            elif self.current==')': tokens.append(Token(T_RPAREN)); self.advance()
+            elif self.current=='+': tokens.append(Token(T_PLUS, pos_start=self.pos)); self.advance()
+            elif self.current=='-': tokens.append(Token(T_MINUS, pos_start=self.pos)); self.advance()
+            elif self.current=='*': tokens.append(Token(T_MULTIPLY, pos_start=self.pos));self.advance()
+            elif self.current=='/': tokens.append(Token(T_DIVIDE, pos_start=self.pos)); self.advance()
+            elif self.current=='%': tokens.append(Token(T_MODULO, pos_start=self.pos)); self.advance()
+            elif self.current=='(': tokens.append(Token(T_LPAREN, pos_start=self.pos)); self.advance()
+            elif self.current==')': tokens.append(Token(T_RPAREN, pos_start=self.pos)); self.advance()
             else: 
                 char=self.current
                 pos_start=self.pos.copy()
                 self.advance()
-                return [],Error.IllegalChracterError(pos_start,self.pos,f'Token Unknown \'{char}\'')
+                return [],IllegalChracterError(pos_start,self.pos,f'Token Unknown \'{char}\'')
+        tokens.append(Token(T_EOF,pos_start=self.pos))
         return tokens,None
 
-
+###NODES
+class NumberNode:
+    def __init__(self,token):
+        self.token=token
+    def __repr__(self):
+        return f'{self.token}'
         
+class BinOpNode:
+    def __init__(self,left_node,token,right_node):
+        self.left_node=left_node
+        self.token=token
+        self.right_node=right_node
+    def __repr__(self):
+        return f'({self.left_node} , {self.token} , {self.right_node})'
+class UnaryOpNode:
+    def __init__(self,operation,node):
+        self.operation=operation
+        self.node=node
+    def __repr__(self) -> str:
+        return f'({self.operation}, {self.node})'
+        
+class ParseResult:
+    def __init__(self):
+        self.error=None
+        self.node=None
+    def register(self,res):
+        if isinstance(res,ParseResult):
+            if res.error: self.error=res.error
+            return res.node
+        return res
+    
+    def success(self,node):
+        self.node=node
+        return self
+    def failure(self,error):
+        self.error=error
+        return self
+    
+class Parser:
+    def __init__(self,tokens):
+        self.tokens=tokens
+        self.idx=-1
+        self.advance()
+    
+    def advance(self):
+        self.idx+=1
+        if self.idx<len(self.tokens): self.current=self.tokens[self.idx]
+        return self.current
+    
+    def parse(self):
+        res=self.expr()
+        if not res.error and self.current.type !=T_EOF:
+            return res.failure(InvalidSyntax(self.current.pos_start, self.current.pos_end, 'Expected Binary operation'))
+        return res
+    def factor(self):
+        res=ParseResult()
+        token=self.current
+        if token.type in (T_PLUS, T_MINUS): 
+            res.register(self.advance())
+            factor=res.register(self.factor())
+            if res.error: return res
+            return res.success(UnaryOpNode(token,factor))
+        
+        elif token.type is T_INTEGER:
+            res.register(self.advance())
+            return res.success(NumberNode(token))
+        
+        elif token.type is T_LPAREN:
+            res.register(self.advance())
+            expr = res.register(self.expr())
+            if self.current.type is T_RPAREN:
+                res.register(self.advance())
+                return res.success(expr)
+            else:
+                return res.failure(InvalidSyntax(self.current.pos_start,self.current.pos_end,'Expected \')\' '))
+        return res.failure(InvalidSyntax(token.pos_start,token.pos_end,"Expected Integer"))
+    
+    def term(self):
+        return self.bin_op(self.factor,(T_MULTIPLY,T_DIVIDE,T_MODULO))
+    def expr(self):
+        return self.bin_op(self.term,(T_PLUS,T_MINUS))
+
+
+    def bin_op(self,func,ops):
+        res=ParseResult()
+        left=res.register(func())
+        if res.error: return res
+
+        while self.current.type in ops:
+            operation=self.current
+            res.register(self.advance())
+            right=res.register(func())
+            if res.error: return res
+            left=BinOpNode(left,operation,right)
+        return res.success(left)
+      
 
 def run(text,fn=None):
     lex=Lexer(fn,text)
     tokens,error=lex.make_tokens()
-
-    return tokens,error
+    if error: return None,error
+    parser=Parser(tokens)
+    ast=parser.parse()
+    return ast.node,ast.error

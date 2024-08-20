@@ -5,5 +5,5 @@ while (True):
     tokens,error=lang.run(text,'Shell')
     if error==None:
         print(tokens)
-    else :
+    else:
         print(error)

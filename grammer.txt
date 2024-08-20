@@ -1,0 +1,6 @@
+
+expr: term ({PLUS/MINUS} term)* 
+term: factor ({MUL/Div} factor)* 
+factor: INT  #NO floats
+      : (PLUS |MINUS ) factor
+      : (LPAREN) factor (RPAREN)
