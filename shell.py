@@ -6,8 +6,9 @@ while (True):
  #   print(factorial(5))
     text = input('Meow > ')
     if text=='~': print('Stopping ... '); break
-    tokens,error=lang.run(text,'Shell')
-    if error==None:
-        print(tokens)
+    if text=='.':
+        text=input('FileName >')
+        with open(text) as f:
+            lang.run(f.read(),'text')
     else:
-        print(error)
+        lang.run(text,'Shell')

@@ -1,0 +1,5 @@
+FUNC add_5(x)-> x+5
+FUNC min_9(x)-> x-9
+
+
+APPLY(FUNC(x)->x+1,add_5(min_9(17)))

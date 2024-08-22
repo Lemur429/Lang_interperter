@@ -59,14 +59,18 @@ class Lexer:
         pos_start=self.pos.copy()
         str=self.current
         self.advance()
-        while self.current!=None and self.current in ALPHABET:
+        while self.current!=None and self.current in ALPHABET+DIGITS+'_':
             str+=self.current
             self.advance()
         if str in KEYWORDS:
             return Token(T_KEYWORD,str,pos_start=pos_start,pos_end=self.pos)
         else:
             return Token(T_IDENTIFIER,str,pos_start=pos_start,pos_end=self.pos)
-        
+    def skip_comment(self):
+        self.advance()
+        while self.current!='\n':
+            self.advance()
+        self.advance()
     def make_char_error(self,token_type,char):
         pos_start=self.pos.copy()
         self.advance()
@@ -81,11 +85,15 @@ class Lexer:
         self.advance()
         while self.current!=None:
             
-            if self.current == '\n' or self.current=='\t' or self.current==' ': 
+            if self.current=='\t' or self.current==' ': 
                 self.advance()
                 continue
             elif self.current in DIGITS: tokens.append(self.make_num())
             elif self.current in ALPHABET: tokens.append(self.make_word())
+            elif self.current=='#': self.skip_comment()
+            elif self.current in ';\n':
+                tokens.append(Token(T_NEWLINE, pos_start=self.pos))
+                self.advance()
             elif self.current=='+': tokens.append(Token(T_PLUS, pos_start=self.pos)); self.advance()
             elif self.current=='-': tokens.append(self.make_arrow())
             elif self.current=='*': tokens.append(Token(T_MULTIPLY, pos_start=self.pos));self.advance()
@@ -114,5 +122,6 @@ class Lexer:
                 pos_start=self.pos.copy()
                 self.advance()
                 return [],Error.IllegalChracterError(pos_start,self.pos,f'Token Unknown \'{char}\'')
+       
         tokens.append(Token(T_EOF,pos_start=self.pos))
         return tokens,None

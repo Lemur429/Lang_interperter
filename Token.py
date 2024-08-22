@@ -1,5 +1,6 @@
 import string
 T_EOF= 'EOF'
+T_NEWLINE='NEWLINE'
 DIGITS='0123456789'
 ALPHABET=string.ascii_letters
 T_INTEGER='INT'
@@ -26,7 +27,7 @@ T_RPAREN='RPAREN'
 T_COMMA='COMMA'
 T_KEYWORD='KEYWORD'
 T_IDENTIFIER='IDENTIFIER'
-KEYWORDS =['IF','THEN','FUNC']
+KEYWORDS =['FUNC','APPLY','RUN']
 
 class Position:
     def __init__(self, idx, ln, col,fn,ftxt):

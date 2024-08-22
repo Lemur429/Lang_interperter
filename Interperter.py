@@ -1,7 +1,7 @@
 
 import Error
 from Token import *
-
+import Parser
 
 class Context:
     def __init__(self, display_name, parent=None, parent_entry_pos=None):
@@ -181,7 +181,9 @@ class Number(Value):
         return copy
     def __repr__(self):
         return str(self.value)
-
+Number.NULL=Number(0)
+Number.TRUE=Number(1)
+Number.FALSE=Number(0)
 class Function(Value):
     def __init__(self, name, body_node, arg_names):
         super().__init__()
@@ -252,7 +254,10 @@ class Interpreter:
 
     def no_visit_method(self, node,context):
         raise Exception(f'No visit_{type(node).__name__} method defined')
-
+    def apply_call(self,node,context):
+        if len(node.arg_nodes)>0:
+            node2=Parser.CallNode(node.arg_nodes[0],node.arg_nodes[1:])
+        return self.visit_CallNode(node2,context)
     def visit_NumberNode(self, node,context):
         return RTResult().success(
             Number(node.token.value).set_context(context).set_pos(node.pos_start, node.pos_end)
@@ -328,7 +333,9 @@ class Interpreter:
     def visit_CallNode(self, node, context):
         res = RTResult()
         args = []
-
+        name=node.node_to_call.var_name_tok
+        if name and name.value =='APPLY':
+            return self.apply_call(node,context)
         value_to_call = res.register(self.visit(node.node_to_call, context))
         if res.error: return res
         value_to_call = value_to_call.copy().set_pos(node.pos_start, node.pos_end)

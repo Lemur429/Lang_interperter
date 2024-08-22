@@ -1,10 +1,10 @@
 
 <expr> ::= <comp_expr> AND\OR <comp_expr>
 <comp_expr> ::=  <arith_expr>| <arith_expr> <comparison> <arith_expr> | !<comp_expr> 
-
 <arith_expr>: <term> ((PLUS|MINUS) <term>)*
-<term>: <factor> ((MUL|DIV|MODULO) <factor>)*
+<term>: <factor> ((MUL|DIV|MODULO) <actor>)*f
 <factor> ::= (PLUS|MINUS) factor | atom
 call ::= atom | atom (LPAREN  expr (COMMA expr)* RPAREN)
-<atom> ::= INT | IDENTIFIER | LPAREN expr RPAREN | <func-def>
-<func_def> ::= FUNC IDENTIFIER (IDENTIFIER(, IDENTIFIER)*) -> <expr>
+<atom> ::= INT | IDENTIFIER | LPAREN expr RPAREN | <func-def>  
+<apply_call> ::=  APPLY LPAREN <expr> (, <atom>)* RPAREN
+<func_def> ::= FUNC IDENTIFIER? (IDENTIFIER?(, IDENTIFIER)*) -> <expr>
