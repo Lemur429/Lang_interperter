@@ -27,7 +27,41 @@ class UnaryOpNode:
 
     def __repr__(self) -> str:
         return f'({self.operation}, {self.node})'
-        
+class FuncDefNode:
+    def __init__(self, var_name_tok, arg_name_toks, body_node):
+        self.var_name_tok = var_name_tok
+        self.arg_name_toks = arg_name_toks
+        self.body_node = body_node
+
+        if self.var_name_tok:
+            self.pos_start = self.var_name_tok.pos_start
+        elif len(self.arg_name_toks) > 0:
+            self.pos_start = self.arg_name_toks[0].pos_start
+        else:
+            self.pos_start = self.body_node.pos_start
+
+        self.pos_end = self.body_node.pos_end
+    def __repr__(self) -> str:
+        return f'({self.var_name_tok} takes [{self.arg_name_toks} -> {self.body_node}])'
+class VarAccessNode:   # Variables of functions!
+	def __init__(self, var_name_tok):
+		self.var_name_tok = var_name_tok
+
+		self.pos_start = self.var_name_tok.pos_start
+		self.pos_end = self.var_name_tok.pos_end
+
+class CallNode:
+    def __init__(self, node_to_call, arg_nodes):
+        self.node_to_call = node_to_call
+        self.arg_nodes = arg_nodes
+
+        self.pos_start = self.node_to_call.pos_start
+
+        if len(self.arg_nodes) > 0:
+            self.pos_end = self.arg_nodes[len(self.arg_nodes) - 1].pos_end
+        else:
+            self.pos_end = self.node_to_call.pos_end
+
 class ParseResult:
     def __init__(self):
         self.error = None
@@ -69,6 +103,117 @@ class Parser:
             return res.failure(Error.InvalidSyntax(self.current.pos_start, self.current.pos_end, 'Expected Binary operation'))
         return res
     
+    def func_def(self):
+        res=ParseResult()
+        # if arrived here we got FUNC keyword so we advance
+        res.register_advancement()
+        self.advance() 
+        if self.current.type == T_IDENTIFIER:
+             func_name_token = self.current
+             res.register_advancement()
+             self.advance()
+             if self.current.type != T_LPAREN:
+                  return res.failure(Error.InvalidSyntax(self.current.pos_start ,self.current.pos_end,'Expected \'(\''))
+        else:
+             func_name_token=None
+             if self.current.type != T_LPAREN:
+                  return res.failure(Error.InvalidSyntax(self.current.pos_start ,self.current.pos_end,'Expected identifier or \'(\''))
+        res.register_advancement()
+        self.advance()
+        arg_name_tokens = []
+        if self.current.type ==T_IDENTIFIER:
+            arg_name_tokens.append(self.current)
+            res.register_advancement()
+            self.advance()
+            while self.current.type==T_COMMA:
+                res.register_advancement()
+                self.advance()
+                if self.current.type ==T_IDENTIFIER:
+                    arg_name_tokens.append(self.current)
+                    res.register_advancement()
+                    self.advance()
+                else:
+                     return res.failure(Error.InvalidSyntax(self.current.pos_start,self.current.pos_end,'Expected identifier after \',\''))
+            if self.current.type!=T_RPAREN:
+                return res.failure(Error.InvalidSyntax(self.current.pos_start ,self.current.pos_end,'Expected \')\' or \',\''))
+        else:
+             if self.current.type!= T_RPAREN:
+                return res.failure(Error.InvalidSyntax(self.current.pos_start ,self.current.pos_end,'Expected identifier or \')\''))
+        res.register_advancement()
+        self.advance()
+        if self.current.type != T_ARROW:
+             return res.failure(Error.InvalidSyntax(self.current.pos_start,self.current.pos_end,"Expected '->'"))
+        res.register_advancement()
+        self.advance()
+        node=res.register(self.expr())
+        if res.error: return res
+        return res.success(FuncDefNode(func_name_token,arg_name_tokens,node))
+
+    def call(self):
+        res = ParseResult()
+        atom = res.register(self.atom())
+        if res.error: return res
+        
+        if self.current.type == T_LPAREN:
+            res.register_advancement()
+            self.advance()
+            arg_nodes = []
+
+            if self.current.type == T_RPAREN:
+                res.register_advancement()
+                self.advance()
+            else:
+                arg_nodes.append(res.register(self.expr()))
+                if res.error:
+                    return res.failure(Error.InvalidSyntax(
+                        self.current.pos_start, self.current.pos_end,
+                        "Expected ')', 'FUNC', int,identifier, '+', '-', '(' or '!'"
+                    ))
+
+                while self.current.type == T_COMMA:
+                    res.register_advancement()
+                    self.advance()
+
+                    arg_nodes.append(res.register(self.expr()))
+                    if res.error: return res
+
+                if self.current.type != T_RPAREN:
+                    return res.failure(Error.InvalidSyntax(
+                        self.current.pos_start, self.current.pos_end,
+                        f"Expected ',' or ')'"
+                    ))
+
+                res.register_advancement()
+                self.advance()
+            return res.success(CallNode(atom, arg_nodes))
+        return res.success(atom)
+
+    def atom(self):
+        res =ParseResult()
+        token=self.current
+        if token.type is T_INTEGER:
+            res.register_advancement()
+            self.advance()
+            return res.success(NumberNode(token))
+        elif token.type is T_LPAREN:
+            res.register_advancement()
+            self.advance()
+            expr=res.register(self.expr())
+            if self.current.type ==T_RPAREN:
+                res.register_advancement()
+                self.advance()
+                return res.success(expr)
+            else:
+                return res.failure(Error.ExpectedChar(self.current.pos_start,self.current.pos_end,f'Expected \')\''))
+        elif token.type is T_KEYWORD and token.value =='FUNC':
+             func_def=res.register(self.func_def())
+             if res.error: return res
+             return res.success(func_def)
+        elif token.type is T_IDENTIFIER:
+            res.register_advancement()
+            self.advance()
+            return res.success(VarAccessNode(token))
+        return res.failure(Error.InvalidSyntax(token.pos_start,token.pos_end,"Expected Integer,+,-,(,! or func definition"))
     def factor(self):
         res=ParseResult()
         token=self.current
@@ -78,23 +223,7 @@ class Parser:
             factor=res.register(self.factor())
             if res.error: return res
             return res.success(UnaryOpNode(token,factor))
-        
-        elif token.type is T_INTEGER:
-            res.register_advancement()
-            self.advance()
-            return res.success(NumberNode(token))
-        
-        elif token.type is T_LPAREN:
-            res.register_advancement()
-            self.advance()
-            expr = res.register(self.expr())
-            if self.current.type is T_RPAREN:
-                res.register_advancement()
-                self.advance()
-                return res.success(expr)
-            else:
-                return res.failure(Error.InvalidSyntax(self.current.pos_start,self.current.pos_end,'Expected \')\' '))
-        return res.failure(Error.InvalidSyntax(token.pos_start,token.pos_end,"Expected Integer"))
+        return self.call()
     
     def term(self):
         return self.bin_op(self.factor,(T_MULTIPLY,T_DIVIDE,T_MODULO))
@@ -113,7 +242,7 @@ class Parser:
         if res.error:
             return res.failure(Error.InvalidSyntax(
                 self.current.pos_start, self.current.pos_end,
-                "Expected int, identifier, '+', '-', '(' or '!'"
+                "Expected int, '+', '-', '(' or '!'"
             ))
         return res.success(node)
 
@@ -123,7 +252,7 @@ class Parser:
         if res.error: return res
         else: 
             return res.success(node)
-                            
+    
     def bin_op(self,func_a,ops,func_b=None):
         if func_b==None: func_b=func_a
         res=ParseResult()

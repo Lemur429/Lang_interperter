@@ -1,17 +1,10 @@
 
-expr::= term ({PLUS/MINUS} term)* | 
+<expr> ::= <comp_expr> AND\OR <comp_expr>
+<comp_expr> ::=  <arith_expr>| <arith_expr> <comparison> <arith_expr> | !<comp_expr> 
 
-term: factor ({MUL/Div} factor)* 
-factor: INT  #NO floats
-      : (PLUS |MINUS ) factor
-      : (LPAREN) factor (RPAREN)
-
-<expr> ::= <arith_expr> | <bool_expr>
-<bool_expr> ::=  <arith_expr> <comparison> <arith_expr> | <bool_expr> (&& | ||) <bool_expr> | !<bool_expr> | <BOOLEAN>
-<comparison> ::= == | != | >= | > | < | <= 
-<BOOLEAN> ::= TRUE | FALSE
-<arith_expr>: <term> | <arith_expr> (PLUS/MINUS) <term>
-<term>: <factor> | <term> (MUL/DIV) <factor> 
-<factor>: <INT> 
-      : (PLUS|MINUS) factor
-      : (LPAREN) factor (RPAREN)
+<arith_expr>: <term> ((PLUS|MINUS) <term>)*
+<term>: <factor> ((MUL|DIV|MODULO) <factor>)*
+<factor> ::= (PLUS|MINUS) factor | atom
+call ::= atom | atom (LPAREN  expr (COMMA expr)* RPAREN)
+<atom> ::= INT | IDENTIFIER | LPAREN expr RPAREN | <func-def>
+<func_def> ::= FUNC IDENTIFIER (IDENTIFIER(, IDENTIFIER)*) -> <expr>

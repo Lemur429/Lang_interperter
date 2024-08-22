@@ -10,7 +10,7 @@ def run(text,fn=None):
     tokens,error=lex.make_tokens()
     if error: return None,error
 
-    #print(tokens)
+    print(tokens)
     parser=Parser.Parser(tokens)
     ast=parser.parse()
     if ast.error: return None,ast.error

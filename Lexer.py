@@ -19,7 +19,17 @@ class Lexer:
             str+=self.current
             self.advance()
         return Token(T_INTEGER,int(str),pos_start,self.pos)
-  
+    def make_arrow(self):
+        pos_start=self.pos.copy()
+        self.advance()
+        if(self.current == '>'):
+            token=Token(T_ARROW,pos_start=pos_start,pos_end=self.pos)
+            self.advance()
+        else:
+            token=Token(T_MINUS,pos_start=pos_start)
+        return token
+
+
     def make_greater(self):
         pos_start=self.pos.copy()
         self.advance()
@@ -47,7 +57,7 @@ class Lexer:
         else:
             token=Token(T_NOT,pos_start=pos_start)
         return token
-    def make_keyword(self):
+    def make_word(self):
         pos_start=self.pos.copy()
         str=self.current
         self.advance()
@@ -55,12 +65,12 @@ class Lexer:
             str+=self.current
             self.advance()
         if str in BOOLEANS:
-            return Token(T_INTEGER,str==BOOLEANS[1],pos_start=pos_start,pos_end=self.pos),None
+            return Token(T_INTEGER,str==BOOLEANS[1],pos_start=pos_start,pos_end=self.pos)
+        elif str in KEYWORDS:
+            return Token(T_KEYWORD,str,pos_start=pos_start,pos_end=self.pos)
         else:
-            return None,Error.IllegalChracterError(pos_start,self.pos,f'Unknown Keyword \'{str}\'')
-            
-
-
+            return Token(T_IDENTIFIER,str,pos_start=pos_start,pos_end=self.pos)
+        
     def make_char_error(self,token_type,char):
         pos_start=self.pos.copy()
         self.advance()
@@ -79,17 +89,15 @@ class Lexer:
                 self.advance()
                 continue
             elif self.current in DIGITS: tokens.append(self.make_num())
-            elif self.current in ALPHABET: 
-                token,error= self.make_keyword()
-                if error: return [],error
-                tokens.append(token)
+            elif self.current in ALPHABET: tokens.append(self.make_word())
             elif self.current=='+': tokens.append(Token(T_PLUS, pos_start=self.pos)); self.advance()
-            elif self.current=='-': tokens.append(Token(T_MINUS, pos_start=self.pos)); self.advance()
+            elif self.current=='-': tokens.append(self.make_arrow())
             elif self.current=='*': tokens.append(Token(T_MULTIPLY, pos_start=self.pos));self.advance()
             elif self.current=='/': tokens.append(Token(T_DIVIDE, pos_start=self.pos)); self.advance()
             elif self.current=='%': tokens.append(Token(T_MODULO, pos_start=self.pos)); self.advance()
             elif self.current=='(': tokens.append(Token(T_LPAREN, pos_start=self.pos)); self.advance()
             elif self.current==')': tokens.append(Token(T_RPAREN, pos_start=self.pos)); self.advance()
+            elif self.current==',': tokens.append(Token(T_COMMA,pos_start=self.pos)); self.advance()
             elif self.current=='=': 
                 token,error=self.make_char_error(T_EE,'=')
                 if error: return [],error 
