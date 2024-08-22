@@ -28,8 +28,6 @@ class Lexer:
         else:
             token=Token(T_MINUS,pos_start=pos_start)
         return token
-
-
     def make_greater(self):
         pos_start=self.pos.copy()
         self.advance()
@@ -64,9 +62,7 @@ class Lexer:
         while self.current!=None and self.current in ALPHABET:
             str+=self.current
             self.advance()
-        if str in BOOLEANS:
-            return Token(T_INTEGER,str==BOOLEANS[1],pos_start=pos_start,pos_end=self.pos)
-        elif str in KEYWORDS:
+        if str in KEYWORDS:
             return Token(T_KEYWORD,str,pos_start=pos_start,pos_end=self.pos)
         else:
             return Token(T_IDENTIFIER,str,pos_start=pos_start,pos_end=self.pos)

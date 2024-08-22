@@ -27,7 +27,6 @@ T_COMMA='COMMA'
 T_KEYWORD='KEYWORD'
 T_IDENTIFIER='IDENTIFIER'
 KEYWORDS =['IF','THEN','FUNC']
-BOOLEANS=['FALSE','TRUE']
 
 class Position:
     def __init__(self, idx, ln, col,fn,ftxt):
