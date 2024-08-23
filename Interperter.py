@@ -3,17 +3,13 @@ import Error
 from Token import *
 import Parser
 
+## BOTH THOSE CLASSES ARE USED FOR  BUILT-IN VARIABLES LIKE TRUE,FALSE AND NULL
 class Context:
     def __init__(self, display_name, parent=None, parent_entry_pos=None):
         self.display_name = display_name
         self.parent = parent
         self.parent_entry_pos = parent_entry_pos
         self.symbol_table = None
-
-#######################################
-# SYMBOL TABLE
-#######################################
-
 class SymbolTable:
     def __init__(self, parent=None):
         self.symbols = {}
@@ -30,11 +26,25 @@ class SymbolTable:
 
     def remove(self, name):
         del self.symbols[name]
+## LIKE PARSERESULT IT IS USED TO IDENTIFY ERRORS BUT MID EXECUTION
+class RTResult:
+    def __init__(self):
+        self.value = None
+        self.error = None
 
+    def register(self, res):
+        if res.error: self.error = res.error
+        return res.value
 
+    def success(self, value):
+        self.value = value
+        return self
 
+    def failure(self, error):
+        self.error = error
+        return self
 
-
+# BECAUSE FUNCTION AND NUMBER SHARE SOME VARIABLES USED SUPER CLASS VALUE
 class Value:
     def __init__(self):
         self.set_pos()
@@ -107,17 +117,17 @@ class Value:
             'Illegal operation',
             self.context
         )
-
 class Number(Value):
     def __init__(self, value):
         super().__init__()
         self.value = value
         
-        
+    
     def set_pos(self, pos_start=None, pos_end=None):
         self.pos_start = pos_start
         self.pos_end = pos_end
         return self
+# ARITHMETIC OPERATIONS
     def added_to(self, other):
         if isinstance(other, Number):
              return Number(self.value + other.value).set_context(self.context), None
@@ -144,27 +154,23 @@ class Number(Value):
                     'Division by zero',
                     self.context
                 )
-            return Number(int(self.value % other.value)).set_context(self.context), None
+            return Number(int(self.value % other.value)).set_context(self.context), None 
+# BOOLEAN OPERATIONS
     def get_comparison_eq(self, other):
         if isinstance(other, Number):
             return Number(int(self.value == other.value)).set_context(self.context), None
-
     def get_comparison_ne(self, other):
         if isinstance(other, Number):
             return Number(int(self.value != other.value)).set_context(self.context), None
-
     def get_comparison_l(self, other):
         if isinstance(other, Number):
             return Number(int(self.value < other.value)).set_context(self.context), None
-
     def get_comparison_g(self, other):
         if isinstance(other, Number):
             return Number(int(self.value > other.value)).set_context(self.context), None
-
     def get_comparison_le(self, other):
         if isinstance(other, Number):
             return Number(int(self.value <= other.value)).set_context(self.context), None
-
     def get_comparison_ge(self, other):
         if isinstance(other, Number):
             return Number(int(self.value >= other.value)).set_context(self.context), None
@@ -181,6 +187,7 @@ class Number(Value):
         return copy
     def __repr__(self):
         return str(self.value)
+## CONSTANTS
 Number.NULL=Number(0)
 Number.TRUE=Number(1)
 Number.FALSE=Number(0)
@@ -190,9 +197,9 @@ class Function(Value):
         self.name = name or "<anonymous>"
         self.body_node = body_node
         self.arg_names = arg_names
-
+# 
     def execute(self, args):
-        res = RTResult()
+        res = RTResult()  
         interpreter = Interpreter()
         new_context = Context(self.name, self.context, self.pos_start)
         new_context.symbol_table = SymbolTable(new_context.parent.symbol_table)
@@ -229,24 +236,9 @@ class Function(Value):
 
     def __repr__(self):
         return f"<function {self.name}>"
-class RTResult:
-    def __init__(self):
-        self.value = None
-        self.error = None
-
-    def register(self, res):
-        if res.error: self.error = res.error
-        return res.value
-
-    def success(self, value):
-        self.value = value
-        return self
-
-    def failure(self, error):
-        self.error = error
-        return self
-
+#INTERPERTER CLASS
 class Interpreter:
+    # MAIN FUNCTION USED TO CALL SPECIFIC FUNCTION FOR SPECIFIC TYPES OF NODES
     def visit(self, node,context):
         method_name = f'visit_{type(node).__name__}'
         method = getattr(self, method_name, self.no_visit_method)
@@ -254,15 +246,18 @@ class Interpreter:
 
     def no_visit_method(self, node,context):
         raise Exception(f'No visit_{type(node).__name__} method defined')
+#   WHEN USED APPLY() BUILT-IN COMMAND IT COMES HERE
     def apply_call(self,node,context):
-        if len(node.arg_nodes)>0:
+        res=RTResult()
+        if len(node.arg_nodes)>0:  ## IF no argument got so cannot call function
             node2=Parser.CallNode(node.arg_nodes[0],node.arg_nodes[1:])
+        else: return res.failure(Error.RTError(node.pos_start,node.pos_end,'Missing function name for APPLY!',context))
         return self.visit_CallNode(node2,context)
+    ## VISIT FUNCTIONS ARE GOING OVER EACH NODE 
     def visit_NumberNode(self, node,context):
         return RTResult().success(
             Number(node.token.value).set_context(context).set_pos(node.pos_start, node.pos_end)
         )
-
     def visit_VarAccessNode(self, node, context):
         res = RTResult()
         var_name = node.var_name_tok.value
@@ -277,7 +272,6 @@ class Interpreter:
 
         value = value.copy().set_pos(node.pos_start, node.pos_end)
         return res.success(value)
-
     def visit_BinOpNode(self, node,context):
         res = RTResult()
         left = res.register(self.visit(node.left_node,context))
@@ -316,7 +310,6 @@ class Interpreter:
             return res.failure(error)
         else:
             return res.success(result.set_pos(node.pos_start, node.pos_end))
-
     def visit_FuncDefNode(self, node, context):
         res = RTResult()
 
@@ -329,7 +322,6 @@ class Interpreter:
             context.symbol_table.set(func_name, func_value)
 
         return res.success(func_value)
-
     def visit_CallNode(self, node, context):
         res = RTResult()
         args = []
@@ -347,7 +339,6 @@ class Interpreter:
         return_value = res.register(value_to_call.execute(args))
         if res.error: return res
         return res.success(return_value)
-
     def visit_UnaryOpNode(self, node,context):
         res = RTResult()
         number = res.register(self.visit(node.node))

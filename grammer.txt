@@ -2,9 +2,32 @@
 <expr> ::= <comp_expr> AND\OR <comp_expr>
 <comp_expr> ::=  <arith_expr>| <arith_expr> <comparison> <arith_expr> | !<comp_expr> 
 <arith_expr>: <term> ((PLUS|MINUS) <term>)*
-<term>: <factor> ((MUL|DIV|MODULO) <actor>)*f
+<term> ::= <factor> ((MUL|DIV|MODULO) <actor>)*
 <factor> ::= (PLUS|MINUS) factor | atom
-call ::= atom | atom (LPAREN  expr (COMMA expr)* RPAREN)
+<call> ::= atom | atom (LPAREN  expr (COMMA expr)* RPAREN)
 <atom> ::= INT | IDENTIFIER | LPAREN expr RPAREN | <func-def>  
 <apply_call> ::=  APPLY LPAREN <expr> (, <atom>)* RPAREN
 <func_def> ::= FUNC IDENTIFIER? (IDENTIFIER?(, IDENTIFIER)*) -> <expr>
+
+
+כיצד נראה קוד בשפה:
+חישובים:
+4+2*5 %2*(2+4+3)    - בגדול כמו בכל שפה חישוב נורמלי חישוב לפי סדר פעולות חשבון
+ניתן גם לעשות חישבוים בוליאנים לדוגמה:
+6%2==0    ;  8+2>5 && TRUE
+מתקבל תשובה של 1 או 0
+1 זה נכון
+0 לא נכון
+
+הגדרת פונקציה:
+FUNC name? (args) -> expression
+לדוגמה:
+FUNC add_5(x) -> x+5
+ניתן גם לוותר על השם וליצור פונקציה אנונימית ללא שם
+בשביל להישתמש בפונקציה אנונית נשתמש בפקודת
+APPLY(func,args)    # ניתן להישתמש גם בפונקציות רגילות ככה
+APPLY(FUNC (x)->x+5,3)   יתן לנו 8
+
+האשטאג הוא סימן לעשות קומנט בשפה לאחר השטאג לא יקרא כלום באותה שורה
+בקובץ test.lambda
+ניתן לראות בפעולה את התוכנית

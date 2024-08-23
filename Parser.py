@@ -7,7 +7,6 @@ class NumberNode:
         self.pos_end = self.token.pos_end
     def __repr__(self):
         return f'{self.token}'     
-
 class BinOpNode:
     def __init__(self,left_node,token,right_node):
         self.left_node=left_node
@@ -27,14 +26,14 @@ class UnaryOpNode:
 
     def __repr__(self) -> str:
         return f'({self.operation}, {self.node})'
-    
+##  NODE CONTAINING ALL THE NODES AT LIST USEFUL FOR FILES    
 class ListNode:
   def __init__(self, element_nodes, pos_start, pos_end):
     self.element_nodes = element_nodes
 
     self.pos_start = pos_start
     self.pos_end = pos_end
-
+## DEFINE NEW FUNCTION NODE
 class FuncDefNode:
     def __init__(self, var_name_tok, arg_name_toks, body_node):
         self.var_name_tok = var_name_tok
@@ -51,14 +50,15 @@ class FuncDefNode:
         self.pos_end = self.body_node.pos_end
     def __repr__(self) -> str:
         return f'({self.var_name_tok} takes [{self.arg_name_toks} -> {self.body_node}])'
-class VarAccessNode:   # Variables of functions!
+## "VARIABLE" ACCESS NODE - ONLY FUNCTIONS!
+class VarAccessNode: 
     def __init__(self, var_name_tok):
         self.var_name_tok = var_name_tok
         self.pos_start = self.var_name_tok.pos_start
         self.pos_end = self.var_name_tok.pos_end
     def __repr__(self) -> str:
         return f'VAR:{self.var_name_tok}'
-
+# CALL TO FUNCTION NODE
 class CallNode:
     def __init__(self, node_to_call, arg_nodes):
         self.node_to_call = node_to_call
@@ -70,6 +70,7 @@ class CallNode:
             self.pos_end = self.arg_nodes[len(self.arg_nodes) - 1].pos_end
         else:
             self.pos_end = self.node_to_call.pos_end
+## CLASS TO IDENTIFY ERRORS IN PARSING
 class ParseResult:
     def __init__(self):
         self.error = None
@@ -103,27 +104,28 @@ class ParseResult:
             self.error = error
         return self
 
+# PARSER CLASS
 class Parser:
     def __init__(self,tokens):
         self.tokens=tokens
         self.idx=-1
         self.advance()
-    
+    ## MOVING TO THE NEXT TOKEN 
     def advance(self):
         self.idx+=1
         if self.idx<len(self.tokens): self.current=self.tokens[self.idx]
         return self.current
+    ## REVERSE TO PAST TOKEN IF ERROR HAPPEND, NEEDED FOR FILES READ
     def reverse(self, amount=1):
         self.idx -= amount
         if self.idx>0 and self.idx<len(self.tokens): self.current=self.tokens[self.idx]
         return self.current
-
+##  MAIN PARSE FUNCTION
     def parse(self):
         res=self.statements()
-        if not res.error and self.current.type !=T_EOF:
-            return res.failure(Error.InvalidSyntax(self.current.pos_start, self.current.pos_end, 'Expected Binary operation'))
+        
         return res
-    
+## FOR EACH LINE CREATING PARSING
     def statements(self):
         res = ParseResult()
         statements = []
@@ -161,18 +163,15 @@ class Parser:
           pos_start,
           self.current.pos_end.copy()
         ))
-
+## CREATE PARSE FOR ONE LINE
     def statement(self):
         res = ParseResult()
         expr = res.register(self.expr())
         if res.error:
-          return res.failure(Error.InvalidSyntax(
-            self.current.pos_start, self.current.pos_end,
-            "Expected 'FUNC', int, identifier, '+', '-', '(', or '!'"
-          ))
+          return res
         return res.success(expr)
 
-
+# EACH FUNCTION HERE IS A PART OF THE BNF GRAMMER MAKING A NODE ACCORDING TO EACH EXPRESSION GRAMMER
     def expr(self):
         res=ParseResult()
         node = res.register(self.bin_op(self.comp_expr, (T_AND,T_OR)))
@@ -212,7 +211,8 @@ class Parser:
     def call(self):
         res = ParseResult()
         atom = res.register(self.atom())
-        if res.error: return res
+        if res.error: 
+            return res
         
         if self.current.type == T_LPAREN:
             res.register_advancement()
@@ -326,7 +326,7 @@ class Parser:
     
     
     
-   
+## GENERAL FUNCTION USED FOR BINARY OPERATIONS , ARITHMETIC AND BOOLEAN
     def bin_op(self,func_a,ops,func_b=None):
         if func_b==None: func_b=func_a
         res=ParseResult()

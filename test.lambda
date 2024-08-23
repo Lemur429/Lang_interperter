@@ -1,5 +1,23 @@
-FUNC add_5(x)-> x+5
-FUNC min_9(x)-> x-9
+#arithmetic operations
 
+1+2   # result 3
+1+2*3   # result 7
+(1+2)*3  # result 9
+5602 %2==0   #result 1(TRUE)
+FUNC add_2(x)->x+2  
+FUNC add(x,y)       ->  x      +y
+add(add_2(5),4)   # result 11
+FUNC add_and_add_2(x,y)-> add_2(add(x,y))
+add_and_add_2(1,2) #result 5
 
-APPLY(FUNC(x)->x+1,add_5(min_9(17)))
+#Recursion  while n>0 : sum=n*sum; n--; 
+FUNC factorial(n) -> n<=0 || n*factorial(n-1)
+factorial(5)  # result 120
+# while >0 : sum+=n%10; n/=10
+FUNC sum_digits(n)-> n<=0 || sum_digits(n/10)+(n%10)
+sum_digits(12345)
+
+# anonymous functions
+APPLY(FUNC (x,y,z)-> x+y+z,1,2,3)
+APPLY(FUNC (x,y,z)-> factorial(x)+factorial(y)+factorial(z) ,1,2,3)
+

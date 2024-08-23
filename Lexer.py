@@ -7,10 +7,13 @@ class Lexer:
         self.pos=Position(-1,0,-1,fn,text)
         self.current=None
 
+## ADVANCE TO THE NEXT CHRACTER
     def advance(self):
         self.pos.advance(self.current)
         if self.pos.idx<len(self.text): self.current=self.text[self.pos.idx]
         else: self.current=None
+
+#### ALL OF THOSE MAKE_? FUNCTIONS ARE FOR IDENTIFING WHAT KIND OF TOKEN IS USED
     def make_num(self):
         str=''
         pos_start=self.pos.copy()
@@ -65,12 +68,7 @@ class Lexer:
         if str in KEYWORDS:
             return Token(T_KEYWORD,str,pos_start=pos_start,pos_end=self.pos)
         else:
-            return Token(T_IDENTIFIER,str,pos_start=pos_start,pos_end=self.pos)
-    def skip_comment(self):
-        self.advance()
-        while self.current!='\n':
-            self.advance()
-        self.advance()
+            return Token(T_IDENTIFIER,str,pos_start=pos_start,pos_end=self.pos)  
     def make_char_error(self,token_type,char):
         pos_start=self.pos.copy()
         self.advance()
@@ -80,6 +78,14 @@ class Lexer:
             return token,None
         else:
             return [],Error.ExpectedChar(pos_start,self.pos,char)
+    
+    def skip_comment(self):
+        self.advance()
+        while self.current!='\n':
+            self.advance()
+
+    
+##    PRIMARY FUNCTION OF LEXER CREATES TOKENS
     def make_tokens(self):
         tokens=[]
         self.advance()
